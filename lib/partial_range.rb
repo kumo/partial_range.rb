@@ -1,10 +1,13 @@
 # PartialRange
 class PartialRange
   def initialize(*options)
-    @string = ""
-    @array = []
+    @cached_string = ""
+    @cached_array = []
+
     @ranges = []
-    @array_dirty = false
+    @values = []
+
+    @string_cache_dirty = @array_cache_dirty = false
 
     options = options[0]
     if options.is_a? Array
@@ -23,92 +26,85 @@ class PartialRange
   end
 
   def to_s
-    if @array_dirty
-      convert_ranges
-      @array_dirty = false
-    elsif @range_dirty
-      convert_array
-      @range_dirty = false
+    if @string_cache_dirty
+      create_string_cache
+      @string_cache_dirty = false
     end
-    @string
+
+    @cached_string
   end
 
   def to_a
-    if @array_dirty
-      convert_ranges
-      @array_dirty = false
+    if @values_cache_dirty
+      create_array_cache
+      @values_cache_dirty = false
     end
-    @array
+
+    @cached_array
   end
 
   def <<(value)
     if value.is_a? Array
-      @array << value.flatten
-      parse_array(@array)
+      value.each do |v|
+        self << v
+      end
     else
-      puts "value is #{value} and ranges: #{@ranges.inspect} and array: #{@array.inspect} and string: #{@string.inspect}"
-      if !parse_ranges(value) # value cannot be added to an existing range
-        if !parse_array_values(value)
-          @range_dirty = true
+      if !process_ranges(value) # value cannot be added to an existing range
+        if process_values(value)
+          @values_cache_dirty = @string_cache_dirty = true
+        else
         end
       else
-        @array_dirty = true
-        puts "ranges are dirty"
-        #convert_ranges
+        @values_cache_dirty = @string_cache_dirty = true
       end
     end
   end
 
   def length
-    @array.length
+    if @values_cache_dirty
+      create_array_cache
+      @values_cache_dirty = false
+    end
+
+    @cached_array.length
   end
 
   protected
 
-  def convert_array
-    lowest = highest = nil
-    result = []
-    @string = ""
-    @ranges = []
+  def create_string_cache
+    results = []
 
-    @array.each do |value|
-    if lowest == nil # populate the lowest value if necessary
-      lowest = value
-      elsif highest == nil # populate the highest value if necessary
-        if value == lowest.succ
-          highest = value
-        else
-          result << lowest
-          lowest = value
-        end
-      else # if we have both high and low values...
-        if value == highest.succ # does the value continue the range?
-          highest = value
-        else # new value doesn't continue range
-          result << "#{lowest}-#{highest}" # write the old range
-          highest = nil
-          lowest = value # use the value as the new lowest limit
-        end
+    combined = (@ranges << @values).flatten.sort.uniq
+
+    @cached_string = ""
+
+    combined.each do |value|
+      if value.is_a? Range
+        results << "#{value.first}-#{value.last}"
+      else
+        results << value
       end
     end
 
-    if highest != nil # if there is a high value then finish the range
-      result << "#{lowest}-#{highest}"
-    elsif lowest != nil # if there is a low value then add the value
-      result << lowest
-    end
+    @cached_string = results.join(",")
+  end
 
-    result.flatten.each do |r|
-      if ! r.is_a? Fixnum
-        low, high = r.split("-")
+  def create_array_cache
+    results = []
 
-        @ranges << Range.new(low.to_i, high.to_i)
-      #else
-      #  @ranges << Range.new(r, r)
+    combined = (@ranges << @values).flatten.sort.uniq
+
+    @cached_string = ""
+
+    combined.map! do |value|
+      if value.is_a? Range
+        value.to_a
+      else
+        value
       end
     end
-    
-    @string = result.flatten.join(",")
+
+    @cached_array = combined.flatten
   end
 
   def parse_array(array)
@@ -117,9 +113,9 @@ class PartialRange
 
     return "" if array.nil?
 
-    @array = array.flatten.sort.uniq
+    @values = array.flatten.sort.uniq
 
-    @array.each do |value|
+    @values.each do |value|
     if lowest == nil # populate the lowest value if necessary
       lowest = value
       elsif highest == nil # populate the highest value if necessary
@@ -157,7 +153,7 @@ class PartialRange
       #  @ranges << Range.new(r, r)
       end
     end
-    
+
     @string = result.flatten.join(",")
   end
 
@@ -184,92 +180,121 @@ class PartialRange
       end
     end
 
-    @array = result.flatten.uniq.sort
+    @values = result.flatten.uniq.sort
   end
 
-  def parse_ranges(value)
+  def process_ranges(value)
     return false unless @ranges.any?
     return true if ranges_include?(value)
     changed = false
+    combinable_range_idx = nil
 
-    #puts "before #{@ranges.inspect}"
+    @values.delete(value) if @values.include? value
+
     @ranges.collect! do |range|
-      #puts "range.low - 1 = value? #{range.first - 1 == value} or range.high + 1 = value #{range.last + 1 == value}"
-      if range.first - 1 == value
+      if range.last + 1 == value
         changed = true
-        Range.new(value, range.last)
-        #return true
-      elsif range.last + 1 == value
+        if @values.include? value + 1
+          @values.delete(value+1)
+          Range.new(range.first, value + 1)
+        else
+          Range.new(range.first, value)
+        end
+      elsif range.first - 1 == value
+        if changed # there is a range with the higher bound the same
+          combinable_range_idx = @ranges.index(range)
+        end
         changed = true
-        Range.new(range.first, value)
-        #return true
+        if @values.include? value - 1
+          @values.delete(value-1)
+          Range.new(value - 1, range.last)
+        else
+          Range.new(value, range.last)
+        end
       else
         range
       end
     end
-    #puts "after #{@ranges.inspect}"
 
+    unless combinable_range_idx.nil?
+      combinable_range = @ranges[combinable_range_idx]
+      previous_range = @ranges[combinable_range_idx - 1]
+      range = Range.new(previous_range.first, combinable_range.last)
+      @ranges.delete(previous_range)
+      @ranges.delete(combinable_range)
+      @ranges << range
+    end
+
+    cleanup_ranges if changed
     return changed
   end
 
-  def parse_array_values(value)
-    if !@array.include? value
-      @array << value
-      @array.sort!
-      
-      pos = @array.index(value)
-      lower_value = @array[pos-1]
-      upper_value = @array[pos+1]
-      puts "lower value is #{lower_value} and upper value is #{upper_value}"
-      if lower_value == value - 1 and upper_value == value + 1
-        @ranges << Range.new(lower_value, upper_value)
-        @array.delete(value)
-        @array.delete(lower_value)
-        @array.delete(upper_value)
-        @array_dirty = true
-      elsif @array[pos-1] == value - 1
-        @ranges << Range.new(lower_value, value)
-        @array.delete(value)
-        @array.delete(lower_value)
-        @array_dirty = true
-      elsif @array[pos+1] == value + 1
-        @ranges << Range.new(value, upper_value)
-        @array.delete(value)
-        @array.delete(upper_value)
-        @array_dirty = true
+  def process_values(value)
+    if !@values.include? value
+      @values << value
+      @values.sort!
+
+      pos = @values.index(value)
+      lower_value = @values[pos-1]
+      upper_value = @values[pos+1]
+      if lower_value == value - 1 or upper_value == value + 1
+        if lower_value == value - 1 and upper_value == value + 1
+          @ranges << Range.new(lower_value, upper_value)
+          @values.delete(lower_value)
+          @values.delete(upper_value)
+        elsif @values[pos-1] == value - 1
+          @ranges << Range.new(lower_value, value)
+          @values.delete(lower_value)
+        elsif @values[pos+1] == value + 1
+          @ranges << Range.new(value, upper_value)
+          @values.delete(upper_value)
+        end
+        @values.delete(value)
+        @values_dirty = true
+        cleanup_ranges
       end
+
+      return true
+    else
+      return false
     end
   end
 
   def ranges_include?(value)
-    #puts "There are #{@ranges.size} ranges (#{@ranges.inspect}) to check for #{value} (#{value.class})"
-
     @ranges.each do |range|
-      #puts "checking range #{range} -- includes value? #{range.include? value}"
       return true if range.include? value
-      #puts "checking if range is higher #{range.first > value}"
       return false if range.first > value
     end
 
     return false
   end
 
-  def convert_ranges
-    #puts "converting an existing range"
-    @array = []
-    @string = []
-    @ranges.each do |range|
-      #puts "#{range.to_a.inspect}"
-      @array << range.to_a
-      @string << "#{range.first}-#{range.last}"
-    end
-
-    @array.flatten!
-    @string = @string.join(",")
+  def cleanup_ranges
+    @ranges.sort!
   end
+end
 
-  def rebuild_array
-    puts "rebuilding array"
-    parse_array(@array)
+class Range
+  def <=>(other)
+    low = self.first
+    other_low = other.is_a?(Range) ? other.first : other
+    result = low <=> other_low
+    return result
+  end
+end
+
+class Fixnum
+  alias_method :old_compare, :<=>
+  def <=>(other)
+    if other.is_a? Range
+      low = self
+      other_low = other.first
+
+      result = low <=> other_low
+      return result
+    else
+      result = old_compare(other)
+      return result
+    end
   end
 end

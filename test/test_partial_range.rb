@@ -79,4 +79,16 @@ class PartialRangeTest < Test::Unit::TestCase
     assert_equal [1,2,3,11,12,13], @partial_range.to_a
     assert_equal 6, @partial_range.length
   end
+
+  def test_adding_unordered_combinable_valurs
+    @partial_range << 5
+    @partial_range << 4
+    @partial_range << 1
+    @partial_range << 2
+    @partial_range << 3
+
+    assert_equal "1-5", @partial_range.to_s
+    assert_equal [1,2,3,4,5], @partial_range.to_a
+    assert_equal 5, @partial_range.length
+  end
 end
