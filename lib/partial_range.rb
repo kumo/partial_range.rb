@@ -71,4 +71,20 @@ class PartialRange
 
     result.flatten.uniq.sort
   end
+
+  def self.parse_to_string(options)
+    PartialRange.new(options).to_s
+  end
+
+  def self.parse_to_list(options)
+    PartialRange.new(options).to_a
+  end
+
+  def to_s
+    @string
+  end
+
+  def to_a
+    @array
+  end
 end
