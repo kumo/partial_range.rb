@@ -32,12 +32,15 @@ class PartialRange
   def <<(value)
     if value.is_a? Array
       @array << value.flatten
+      parse_array(@array)
     else
-      if check_ranges(value)
+      if !parse_ranges(value)
         @array << value
+        parse_array(@array)
+      else
+        convert_ranges
       end
     end
-    parse_array(@array)
   end
 
   def length
@@ -82,14 +85,14 @@ class PartialRange
     end
 
     @ranges = []
-    
+
     result.flatten.each do |r|
       if ! r.is_a? Fixnum
         low, high = r.split("-")
 
         @ranges << Range.new(low.to_i, high.to_i)
-      else
-        @ranges << Range.new(r, r)
+      #else
+      #  @ranges << Range.new(r, r)
       end
     end
     
@@ -122,16 +125,55 @@ class PartialRange
     @array = result.flatten.uniq.sort
   end
 
-  def check_ranges(value)
-    #puts "There are #{@ranges.size} ranges to check for #{value} (#{value.class})"
+  def parse_ranges(value)
+    return false unless @ranges.any?
+    return true if ranges_include?(value)
+    changed = false
+
+    #puts "before #{@ranges.inspect}"
+    @ranges.collect! do |range|
+      #puts "range.low - 1 = value? #{range.first - 1 == value} or range.high + 1 = value #{range.last + 1 == value}"
+      if range.first - 1 == value
+        changed = true
+        Range.new(value, range.last)
+        #return true
+      elsif range.last + 1 == value
+        changed = true
+        Range.new(range.first, value)
+        #return true
+      else
+        range
+      end
+    end
+    #puts "after #{@ranges.inspect}"
+
+    return changed
+  end
+
+  def ranges_include?(value)
+    #puts "There are #{@ranges.size} ranges (#{@ranges.inspect}) to check for #{value} (#{value.class})"
 
     @ranges.each do |range|
       #puts "checking range #{range} -- includes value? #{range.include? value}"
-      return false if range.include? value
+      return true if range.include? value
       #puts "checking if range is higher #{range.first > value}"
       return false if range.first > value
     end
 
-    return true
+    return false
+  end
+
+  def convert_ranges
+    #puts "creating new array and string from ranges"
+    @array = []
+    @string = []
+    @ranges.each do |range|
+      #puts "#{range.to_a.inspect}"
+      @array << range.to_a
+      @string << "#{range.first}-#{range.last}"
+    end
+
+    @array.flatten!
+    @string = @string.join(",")
   end
 end
