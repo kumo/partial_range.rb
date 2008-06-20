@@ -87,7 +87,7 @@ class PartialRange
       if ! r.is_a? Fixnum
         low, high = r.split("-")
 
-        @ranges << Range.new(low, high)
+        @ranges << Range.new(low.to_i, high.to_i)
       else
         @ranges << Range.new(r, r)
       end
@@ -123,11 +123,13 @@ class PartialRange
   end
 
   def check_ranges(value)
-    #puts "There are #{@ranges.size} ranges to check for #{value}"
+    #puts "There are #{@ranges.size} ranges to check for #{value} (#{value.class})"
 
     @ranges.each do |range|
-      #puts "checking range #{range} -- #{range.include? value}"
+      #puts "checking range #{range} -- includes value? #{range.include? value}"
       return false if range.include? value
+      #puts "checking if range is higher #{range.first > value}"
+      return false if range.first > value
     end
 
     return true
