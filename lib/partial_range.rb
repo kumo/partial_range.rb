@@ -1,6 +1,15 @@
 # PartialRange
 class PartialRange
-  def initialize
+  def initialize(*options)
+    @string = ""
+    @array = []
+
+    options = options[0]
+    if options.is_a? Array
+      @string = parse_array(options)
+    else
+      @array = parse_string(options)
+    end
   end
 
   def parse_array(array)
@@ -24,7 +33,6 @@ class PartialRange
           highest = value
         else # new value doesn't continue range
           result << "#{lowest}-#{highest}" # write the old range
-          yield lowest, highest
           highest = nil
           lowest = value # use the value as the new lowest limit
         end
@@ -40,7 +48,7 @@ class PartialRange
     result.flatten.join(",")
   end
 
-  def PartialRange.parse_to_list(range)
+  def parse_string(range)
     result = []
 
     return [] if range.nil?
@@ -62,41 +70,5 @@ class PartialRange
     end
 
     result.flatten.uniq.sort
-  end
-
-  def PartialRange.parse_to_string(array)
-    lowest = highest = nil
-    result = []
-
-    return "" if array.nil?
-
-    array.flatten.sort.uniq.each do |value|
-      if lowest == nil # populate the lowest value if necessary
-        lowest = value
-      elsif highest == nil # populate the highest value if necessary
-        if value == lowest.succ
-          highest = value
-        else
-          result << lowest
-          lowest = value
-        end
-      else # if we have both high and low values...
-        if value == highest.succ # does the value continue the range?
-          highest = value
-        else # new value doesn't continue range
-          result << "#{lowest}-#{highest}" # write the old range
-          highest = nil
-          lowest = value # use the value as the new lowest limit
-        end
-      end
-    end
-
-    if highest != nil # if there is a high value then finish the range
-      result << "#{lowest}-#{highest}"
-    elsif lowest != nil # if there is a low value then add the value
-      result << lowest
-    end
-
-    result.flatten.join(",")
   end
 end
