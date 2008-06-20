@@ -7,6 +7,8 @@ class PartialRange
     lowest = highest = nil
     result = []
 
+    return "" if array.nil?
+
     array.flatten.sort.uniq.each do |value|
     if lowest == nil # populate the lowest value if necessary
       lowest = value
@@ -38,11 +40,13 @@ class PartialRange
     result.flatten.join(",")
   end
 
-def PartialRange.parse_to_list(range)
+  def PartialRange.parse_to_list(range)
+    result = []
+
+    return [] if range.nil?
+
     # assume that the string consists of: "a,b,c-e,f"
     list = range.split(",") # split the comma separated values
-
-    result = []
 
     list.each do |entry|
       if entry.include? "-" 
@@ -63,6 +67,8 @@ def PartialRange.parse_to_list(range)
   def PartialRange.parse_to_string(array)
     lowest = highest = nil
     result = []
+
+    return "" if array.nil?
 
     array.flatten.sort.uniq.each do |value|
       if lowest == nil # populate the lowest value if necessary
