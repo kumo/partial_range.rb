@@ -3,6 +3,7 @@ class PartialRange
   def initialize(*options)
     @string = ""
     @array = []
+    @ranges = []
 
     options = options[0]
     if options.is_a? Array
@@ -32,7 +33,9 @@ class PartialRange
     if value.is_a? Array
       @array << value.flatten
     else
-      @array << value
+      if check_ranges(value)
+        @array << value
+      end
     end
     parse_array(@array)
   end
@@ -78,6 +81,18 @@ class PartialRange
       result << lowest
     end
 
+    @ranges = []
+    
+    result.flatten.each do |r|
+      if ! r.is_a? Fixnum
+        low, high = r.split("-")
+
+        @ranges << Range.new(low, high)
+      else
+        @ranges << Range.new(r, r)
+      end
+    end
+    
     @string = result.flatten.join(",")
   end
 
@@ -105,5 +120,16 @@ class PartialRange
     end
 
     @array = result.flatten.uniq.sort
+  end
+
+  def check_ranges(value)
+    #puts "There are #{@ranges.size} ranges to check for #{value}"
+
+    @ranges.each do |range|
+      #puts "checking range #{range} -- #{range.include? value}"
+      return false if range.include? value
+    end
+
+    return true
   end
 end
