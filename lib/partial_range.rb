@@ -6,11 +6,42 @@ class PartialRange
 
     options = options[0]
     if options.is_a? Array
-      @string = parse_array(options)
+      parse_array(options)
     else
-      @array = parse_string(options)
+      parse_string(options)
     end
   end
+
+  def self.parse_to_string(options)
+    PartialRange.new(options).to_s
+  end
+
+  def self.parse_to_list(options)
+    PartialRange.new(options).to_a
+  end
+
+  def to_s
+    @string
+  end
+
+  def to_a
+    @array
+  end
+
+  def <<(value)
+    if value.is_a? Array
+      @array << value.flatten
+    else
+      @array << value
+    end
+    parse_array(@array)
+  end
+
+  def length
+    @array.length
+  end
+
+  protected
 
   def parse_array(array)
     lowest = highest = nil
@@ -18,7 +49,9 @@ class PartialRange
 
     return "" if array.nil?
 
-    array.flatten.sort.uniq.each do |value|
+    @array = array.flatten.sort.uniq
+
+    @array.each do |value|
     if lowest == nil # populate the lowest value if necessary
       lowest = value
       elsif highest == nil # populate the highest value if necessary
@@ -45,13 +78,15 @@ class PartialRange
       result << lowest
     end
 
-    result.flatten.join(",")
+    @string = result.flatten.join(",")
   end
 
   def parse_string(range)
     result = []
 
     return [] if range.nil?
+
+    @string = range
 
     # assume that the string consists of: "a,b,c-e,f"
     list = range.split(",") # split the comma separated values
@@ -69,22 +104,6 @@ class PartialRange
       end
     end
 
-    result.flatten.uniq.sort
-  end
-
-  def self.parse_to_string(options)
-    PartialRange.new(options).to_s
-  end
-
-  def self.parse_to_list(options)
-    PartialRange.new(options).to_a
-  end
-
-  def to_s
-    @string
-  end
-
-  def to_a
-    @array
+    @array = result.flatten.uniq.sort
   end
 end
