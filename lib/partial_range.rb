@@ -1,12 +1,6 @@
 # PartialRange
 class PartialRange
-  def initialize(string)
-    @ranges = []
-    parse_string(string)
-  end
-
-  def parse_string_to_ranges(string)
-    parse_string(string) # { |low, high| ranges << new Range(low, high)}
+  def initialize
   end
 
   def parse_array(array)
