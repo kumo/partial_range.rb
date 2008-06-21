@@ -1,7 +1,7 @@
 require 'test/unit'
 require File.join(File.dirname(__FILE__), *%w[.. lib partial_range])
 
-class PartialRangeClassMethodsTest < Test::Unit::TestCase
+class TestPartialRangeClassMethods < Test::Unit::TestCase
   def test_empty_string
     list = PartialRange.parse_to_list("")
     assert_equal [], list

@@ -7,13 +7,12 @@ class PartialRange
     @ranges = []
     @values = []
 
-    @string_cache_dirty = @array_cache_dirty = false
+    @string_cache_dirty = @values_cache_dirty = false
 
-    options = options[0]
-    if options.is_a? Array
+    if options[0].is_a? Array
       parse_array(options)
     else
-      parse_string(options)
+      parse_string(options[0])
     end
   end
 
@@ -94,8 +93,6 @@ class PartialRange
 
     combined = (@ranges << @values).flatten.sort.uniq
 
-    @cached_string = ""
-
     combined.map! do |value|
       if value.is_a? Range
         value.to_a
@@ -109,27 +106,26 @@ class PartialRange
 
   def parse_array(array)
     lowest = highest = nil
-    result = []
 
-    return "" if array.nil?
+    return if array.nil?
 
-    @values = array.flatten.sort.uniq
+    cleaned_array = array.flatten.sort.uniq
 
-    @values.each do |value|
+    cleaned_array.each do |value|
     if lowest == nil # populate the lowest value if necessary
       lowest = value
       elsif highest == nil # populate the highest value if necessary
         if value == lowest.succ
           highest = value
         else
-          result << lowest
+          @values << lowest
           lowest = value
         end
       else # if we have both high and low values...
         if value == highest.succ # does the value continue the range?
           highest = value
         else # new value doesn't continue range
-          result << "#{lowest}-#{highest}" # write the old range
+          @ranges << Range.new(lowest, highest) # write the old range
           highest = nil
           lowest = value # use the value as the new lowest limit
         end
@@ -137,50 +133,58 @@ class PartialRange
     end
 
     if highest != nil # if there is a high value then finish the range
-      result << "#{lowest}-#{highest}"
+      @ranges << Range.new(lowest, highest)
     elsif lowest != nil # if there is a low value then add the value
-      result << lowest
+      @values << lowest
     end
 
-    @ranges = []
-
-    result.flatten.each do |r|
-      if ! r.is_a? Fixnum
-        low, high = r.split("-")
-
-        @ranges << Range.new(low.to_i, high.to_i)
-      #else
-      #  @ranges << Range.new(r, r)
-      end
-    end
-
-    @string = result.flatten.join(",")
+    @string_cache_dirty = @values_cache_dirty = true
   end
 
   def parse_string(range)
-    result = []
-
-    return [] if range.nil?
-
-    @string = range
+    return if range.nil? or range == ""
 
     # assume that the string consists of: "a,b,c-e,f"
-    list = range.split(",") # split the comma separated values
+    cleaned_list = range.split(",") # split the comma separated values
 
-    list.each do |entry|
+    cleaned_list.sort.each do |entry|
       if entry.include? "-" 
         lowest, highest = entry.split("-")
         if lowest >= highest then # if we have d-a then just add d
-          result << entry.to_i
+          @values << entry.to_i
         else
-          result << (lowest.to_i..highest.to_i).to_a # range to array
+          @ranges << Range.new(lowest.to_i, highest.to_i) # range to array
         end
       else
-        result << entry.to_i
+        @values << entry.to_i
       end
     end
 
-    @values = result.flatten.uniq.sort
+    @string_cache_dirty = @values_cache_dirty = true
+  end
+
+  def check_ranges_and_values
+    puts "check ranges #{@ranges.inspect} and values #{@values.inspect}"
+    @values = @values.delete_if {|value| ranges_include? value}
+    puts "values now #{@values.inspect}"
+
+    cleaned_ranges = []
+    @ranges.each do |range|
+      idx = @ranges.index(range)
+      if idx != 0
+        puts "should check if #{range.inspect} [#{idx}] overlaps #{@ranges[idx-1].inspect} or #{@ranges[idx+1].inspect}"
+      else
+        puts "should check if #{range.inspect} [#{idx}] overlaps #{@ranges[idx+1].inspect}"
+      end
+
+      if ranges_include? range.first
+        puts "low range found"
+      elsif ranges_include? range.last
+        puts "high range found"
+      else
+        puts "nothing found"
+      end
+    end
   end
 
   def process_ranges(value)
