@@ -150,7 +150,7 @@ class PartialRange
     cleaned_list.sort.each do |entry|
       if entry.include? "-" 
         lowest, highest = entry.split("-")
-        if lowest >= highest then # if we have d-a then just add d
+        if lowest.to_i >= highest.to_i then # if we have d-a then just add d
           @values << entry.to_i
         else
           @ranges << Range.new(lowest.to_i, highest.to_i) # range to array
@@ -160,31 +160,99 @@ class PartialRange
       end
     end
 
+    @ranges.sort!
+
     @string_cache_dirty = @values_cache_dirty = true
+
+    cleanup_ranges
+    cleanup_values
+
+    combine_ranges_and_values
+
+    cleanup_ranges
   end
 
-  def check_ranges_and_values
-    puts "check ranges #{@ranges.inspect} and values #{@values.inspect}"
+  def cleanup_values
     @values = @values.delete_if {|value| ranges_include? value}
-    puts "values now #{@values.inspect}"
+  end
 
+  def cleanup_ranges
+    # p "cleanup ranges"
+    # p @ranges
     cleaned_ranges = []
+
+    if @ranges.length < 2
+      return
+    end
+
     @ranges.each do |range|
-      idx = @ranges.index(range)
-      if idx != 0
-        puts "should check if #{range.inspect} [#{idx}] overlaps #{@ranges[idx-1].inspect} or #{@ranges[idx+1].inspect}"
-      else
-        puts "should check if #{range.inspect} [#{idx}] overlaps #{@ranges[idx+1].inspect}"
+      # puts "checking: "
+      # p range
+      if cleaned_ranges.empty?
+        cleaned_ranges << range
+        next
       end
 
-      if ranges_include? range.first
-        puts "low range found"
-      elsif ranges_include? range.last
-        puts "high range found"
+      prev_range = cleaned_ranges[-1]
+
+      if prev_range.first > range.first && prev_range.last >= range.last
+        # puts "before overlap"
+        prev_range = range.first..prev_range.last
+        cleaned_ranges[-1] = prev_range
+      elsif prev_range.first <= range.first && prev_range.last >= range.last
+        # puts "included"
+      elsif prev_range.last > range.first
+        # puts "after overlap"
+        prev_range = prev_range.first..range.last
+        cleaned_ranges[-1] = prev_range
+      elsif prev_range.last == range.first - 1
+        # puts "boom"
+        prev_range = prev_range.first..range.last
+        cleaned_ranges[-1] = prev_range
       else
-        puts "nothing found"
+        # puts "adding booom"
+        cleaned_ranges << range
+      end
+
+      # p cleaned_ranges
+
+    end
+
+    @ranges = cleaned_ranges
+  end
+
+  def combine_ranges_and_values
+    # p "combine_ranges_and_values"
+    return unless @ranges.any?
+    return unless @values.any?
+
+    new_ranges = []
+    new_values = []
+
+    @values.each do |value|
+
+      @ranges.each do |range|
+        # p range
+
+        if range.include? value
+          # p "range contains value"
+          new_ranges << range
+        elsif range.last + 1 == value
+          # p "value extends range after #{range.first}..#{value}"
+          new_ranges << (range.first..value.to_i)
+        elsif range.first - 1 == value
+          # p "value extends range before #{value}..#{range.last}"
+          new_ranges << (value.to_i..range.last)
+        else
+          # p "value does nothing"
+          new_values << value
+          new_ranges << range
+        end
       end
     end
+
+    @ranges = new_ranges
+    @values = new_values
   end
 
   def process_ranges(value)
@@ -273,9 +341,9 @@ class PartialRange
     return false
   end
 
-  def cleanup_ranges
-    @ranges.sort!
-  end
+  #def cleanup_ranges
+  #  @ranges.sort!
+  #end
 end
 
 class Range
