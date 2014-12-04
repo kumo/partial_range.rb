@@ -11,6 +11,7 @@ I think that I once wrote this code to help me understand if I was missing episo
 Examples
 ========
 
+````
 @pr = PartialRange.new
 @pr << 1
 @pr << 2
@@ -30,6 +31,6 @@ Examples
 @pr = PartialRange.new([1,3,4,8,9,10])
 @pr.to_s
  -> "1,3-4,8-10"
+````
 
-
-Copyright (c) 2008 Rob Clarke (kumo), released under the MIT license
+Copyright (c) 2014 Rob Clarke (kumo), released under the MIT license
