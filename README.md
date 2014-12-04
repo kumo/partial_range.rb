@@ -8,8 +8,7 @@ PartialRange is a simple parser that can convert an array of numbers into a stri
 I think that I once wrote this code to help me understand if I was missing episodes from an anime. From a list of filenames I would extract the episode numbers and then see if any were missing.
 
 
-Examples
-========
+## Examples
 
 ````
 @pr = PartialRange.new
@@ -23,11 +22,19 @@ Examples
 
 @pr.to_a
  -> [1,2,3,5]
+````
 
+Create a `PartialRange` from a string:
+
+````
 @pr = PartialRange.new("1-5,7-10")
 @pr.to_a
  -> [1,2,3,4,5,7,8,9,10]
+````
 
+Create a `PartialRange` from an array:
+
+````
 @pr = PartialRange.new([1,3,4,8,9,10])
 @pr.to_s
  -> "1,3-4,8-10"
