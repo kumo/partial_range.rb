@@ -355,7 +355,7 @@ class Range
   end
 end
 
-class Fixnum
+class Integer
   alias_method :old_compare, :<=>
   def <=>(other)
     if other.is_a? Range
