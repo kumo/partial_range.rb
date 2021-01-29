@@ -89,8 +89,6 @@ class PartialRange
   end
 
   def create_array_cache
-    results = []
-
     combined = (@ranges << @values).flatten.sort.uniq
 
     combined.map! do |value|
@@ -112,8 +110,8 @@ class PartialRange
     cleaned_array = array.flatten.sort.uniq
 
     cleaned_array.each do |value|
-    if lowest == nil # populate the lowest value if necessary
-      lowest = value
+      if lowest == nil # populate the lowest value if necessary
+        lowest = value
       elsif highest == nil # populate the highest value if necessary
         if value == lowest.succ
           highest = value
