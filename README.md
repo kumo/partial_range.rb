@@ -11,32 +11,32 @@ I think that I once wrote this code to help me understand if I was missing episo
 ## Examples
 
 ````
-@pr = PartialRange.new
-@pr << 1
-@pr << 2
-@pr << 3
-@pr << 5
+partial_range = PartialRange.new
+partial_range << 1
+partial_range << 2
+partial_range << 3
+partial_range << 5
 
-@pr.to_s
+partial_range.to_s
  -> "1-3,5"
 
-@pr.to_a
+partial_range.to_a
  -> [1,2,3,5]
 ````
 
 Create a `PartialRange` from a string:
 
 ````
-@pr = PartialRange.new("1-5,7-10")
-@pr.to_a
+partial_range = PartialRange.new("1-5,7-10")
+partial_range.to_a
  -> [1,2,3,4,5,7,8,9,10]
 ````
 
 Create a `PartialRange` from an array:
 
 ````
-@pr = PartialRange.new([1,3,4,8,9,10])
-@pr.to_s
+partial_range = PartialRange.new([1,3,4,8,9,10])
+partial_range.to_s
  -> "1,3-4,8-10"
 ````
 
