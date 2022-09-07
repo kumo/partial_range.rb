@@ -25,19 +25,13 @@ class PartialRange
   end
 
   def to_s
-    if @string_cache_dirty
-      create_string_cache
-      @string_cache_dirty = false
-    end
+    create_string_cache if @string_cache_dirty
 
     @cached_string
   end
 
   def to_a
-    if @values_cache_dirty
-      create_array_cache
-      @values_cache_dirty = false
-    end
+    create_array_cache if @values_cache_dirty
 
     @cached_array
   end
@@ -50,20 +44,17 @@ class PartialRange
     else
       if !process_ranges(value) # value cannot be added to an existing range
         if process_values(value)
-          @values_cache_dirty = @string_cache_dirty = true
+          mark_caches_dirty
         else
         end
       else
-        @values_cache_dirty = @string_cache_dirty = true
+        mark_caches_dirty
       end
     end
   end
 
   def length
-    if @values_cache_dirty
-      create_array_cache
-      @values_cache_dirty = false
-    end
+    create_array_cache if @values_cache_dirty
 
     @cached_array.length
   end
@@ -71,21 +62,20 @@ class PartialRange
   protected
 
   def create_string_cache
-    results = []
-
     combined = (@ranges << @values).flatten.sort.uniq
 
     @cached_string = ""
 
-    combined.each do |value|
+    combined.map! do |value|
       if value.is_a? Range
-        results << "#{value.first}-#{value.last}"
+        "#{value.first}-#{value.last}"
       else
-        results << value
+        value
       end
     end
 
-    @cached_string = results.join(",")
+    @cached_string = combined.join(",")
+    @string_cache_dirty = false
   end
 
   def create_array_cache
@@ -100,6 +90,11 @@ class PartialRange
     end
 
     @cached_array = combined.flatten
+    @values_cache_dirty = false
+  end
+
+  def mark_caches_dirty
+    @values_cache_dirty = @string_cache_dirty = true
   end
 
   def parse_array(array)
@@ -136,7 +131,7 @@ class PartialRange
       @values << lowest
     end
 
-    @string_cache_dirty = @values_cache_dirty = true
+    mark_caches_dirty
   end
 
   def parse_string(range)
@@ -160,7 +155,7 @@ class PartialRange
 
     @ranges.sort!
 
-    @string_cache_dirty = @values_cache_dirty = true
+    mark_caches_dirty
 
     cleanup_ranges
     cleanup_values
