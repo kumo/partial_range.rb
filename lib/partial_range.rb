@@ -41,16 +41,11 @@ class PartialRange
       value.each do |v|
         self << v
       end
-    else
-      if !process_ranges(value) # value cannot be added to an existing range
-        if process_values(value)
-          mark_caches_dirty
-        else
-        end
-      else
-        mark_caches_dirty
-      end
+
+      return
     end
+
+    process_values(value) unless process_ranges(value)
   end
 
   def length
@@ -249,6 +244,7 @@ class PartialRange
   def process_ranges(value)
     return false unless @ranges.any?
     return true if ranges_include?(value)
+
     changed = false
     combinable_range_idx = nil
 
@@ -289,6 +285,8 @@ class PartialRange
     end
 
     cleanup_ranges if changed
+    mark_caches_dirty if changed
+
     return changed
   end
 
@@ -314,9 +312,10 @@ class PartialRange
         @values.delete(upper_value)
       end
       @values.delete(value)
-      @values_dirty = true
       cleanup_ranges
     end
+
+    mark_caches_dirty
 
     return true
   end
