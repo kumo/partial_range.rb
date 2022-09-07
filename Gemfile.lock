@@ -1,14 +1,13 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    json (1.8.1)
     rake (12.3.3)
-    rdoc (4.1.1)
-      json (~> 1.4)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   rake
-  rdoc
+
+BUNDLED WITH
+   2.3.7
