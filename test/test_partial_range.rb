@@ -91,4 +91,12 @@ class PartialRangeTest < Test::Unit::TestCase
     assert_equal [1,2,3,4,5], @partial_range.to_a
     assert_equal 5, @partial_range.length
   end
+
+  def test_cache_can_be_refreshed
+    partial_range = PartialRange.new([1,2,3])
+    assert_equal "1-3", partial_range.to_s
+
+    partial_range << 4
+    assert_equal "1-4", partial_range.to_s
+  end
 end

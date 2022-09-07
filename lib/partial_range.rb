@@ -57,7 +57,7 @@ class PartialRange
   protected
 
   def create_string_cache
-    combined = (@ranges << @values).flatten.sort.uniq
+    combined = [@ranges + @values].flatten.sort.uniq
 
     @cached_string = ""
 
@@ -74,7 +74,7 @@ class PartialRange
   end
 
   def create_array_cache
-    combined = (@ranges << @values).flatten.sort.uniq
+    combined = [@ranges + @values].flatten.sort.uniq
 
     combined.map! do |value|
       if value.is_a? Range
