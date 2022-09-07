@@ -1,7 +1,7 @@
 PartialRange
 ============
 
-![Build Status](https://travis-ci.org/kumo/partial_range.rb.svg?branch=master)
+[![Ruby](https://github.com/kumo/partial_range.rb/actions/workflows/ruby.yml/badge.svg)](https://github.com/kumo/partial_range.rb/actions/workflows/ruby.yml)
 
 PartialRange is a simple parser that can convert an array of numbers into a string (e.g. from [1,2,3,5] into "1-3,5") or turn a string into an array of numbers (e.g. from "1,2,1,2-3" into [1,2,3]).
 
