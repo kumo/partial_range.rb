@@ -103,9 +103,9 @@ class PartialRange
   end
 
   def parse_array(array)
-    lowest = highest = nil
-
     return if array.nil?
+
+    lowest = highest = nil
 
     cleaned_array = array.flatten.sort.uniq
 
@@ -177,11 +177,9 @@ class PartialRange
   def cleanup_ranges
     # p "cleanup ranges"
     # p @ranges
-    cleaned_ranges = []
+    return unless @ranges.length > 1
 
-    if @ranges.length < 2
-      return
-    end
+    cleaned_ranges = []
 
     @ranges.each do |range|
       # puts "checking: "
@@ -300,34 +298,32 @@ class PartialRange
   end
 
   def process_values(value)
-    if !@values.include? value
-      @values << value
-      @values.sort!
+    return false if @values.include? value
 
-      pos = @values.index(value)
-      lower_value = @values[pos-1]
-      upper_value = @values[pos+1]
-      if lower_value == value - 1 or upper_value == value + 1
-        if lower_value == value - 1 and upper_value == value + 1
-          @ranges << Range.new(lower_value, upper_value)
-          @values.delete(lower_value)
-          @values.delete(upper_value)
-        elsif @values[pos-1] == value - 1
-          @ranges << Range.new(lower_value, value)
-          @values.delete(lower_value)
-        elsif @values[pos+1] == value + 1
-          @ranges << Range.new(value, upper_value)
-          @values.delete(upper_value)
-        end
-        @values.delete(value)
-        @values_dirty = true
-        cleanup_ranges
+    @values << value
+    @values.sort!
+
+    pos = @values.index(value)
+    lower_value = @values[pos-1]
+    upper_value = @values[pos+1]
+    if lower_value == value - 1 or upper_value == value + 1
+      if lower_value == value - 1 and upper_value == value + 1
+        @ranges << Range.new(lower_value, upper_value)
+        @values.delete(lower_value)
+        @values.delete(upper_value)
+      elsif @values[pos-1] == value - 1
+        @ranges << Range.new(lower_value, value)
+        @values.delete(lower_value)
+      elsif @values[pos+1] == value + 1
+        @ranges << Range.new(value, upper_value)
+        @values.delete(upper_value)
       end
-
-      return true
-    else
-      return false
+      @values.delete(value)
+      @values_dirty = true
+      cleanup_ranges
     end
+
+    return true
   end
 
   def ranges_include?(value)
