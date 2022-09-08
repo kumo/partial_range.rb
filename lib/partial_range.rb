@@ -1,7 +1,7 @@
 # PartialRange
 class PartialRange
   def initialize(*options)
-    @cached_string = ""
+    @cached_string = ''
     @cached_array = []
 
     @ranges = []
@@ -59,8 +59,6 @@ class PartialRange
   def create_string_cache
     combined = [@ranges + @values].flatten.sort.uniq
 
-    @cached_string = ""
-
     combined.map! do |value|
       if value.is_a? Range
         "#{value.first}-#{value.last}"
@@ -69,7 +67,7 @@ class PartialRange
       end
     end
 
-    @cached_string = combined.join(",")
+    @cached_string = combined.join(',')
     @string_cache_dirty = false
   end
 
@@ -100,29 +98,27 @@ class PartialRange
     cleaned_array = array.flatten.sort.uniq
 
     cleaned_array.each do |value|
-      if lowest == nil # populate the lowest value if necessary
+      if lowest.nil? # populate the lowest value if necessary
         lowest = value
-      elsif highest == nil # populate the highest value if necessary
+      elsif highest.nil? # populate the highest value if necessary
         if value == lowest.succ
           highest = value
         else
           @values << lowest
           lowest = value
         end
-      else # if we have both high and low values...
-        if value == highest.succ # does the value continue the range?
-          highest = value
-        else # new value doesn't continue range
-          @ranges << Range.new(lowest, highest) # write the old range
-          highest = nil
-          lowest = value # use the value as the new lowest limit
-        end
+      elsif value == highest.succ # does the value continue the range?
+        highest = value
+      else # new value doesn't continue range
+        @ranges << Range.new(lowest, highest) # write the old range
+        highest = nil
+        lowest = value # use the value as the new lowest limit
       end
     end
 
-    if highest != nil # if there is a high value then finish the range
+    if !highest.nil? # if there is a high value then finish the range
       @ranges << Range.new(lowest, highest)
-    elsif lowest != nil # if there is a low value then add the value
+    elsif !lowest.nil? # if there is a low value then add the value
       @values << lowest
     end
 
@@ -130,15 +126,15 @@ class PartialRange
   end
 
   def parse_string(range)
-    return if range.nil? or range == ""
+    return if range.nil? || range == ''
 
     # assume that the string consists of: "a,b,c-e,f"
-    cleaned_list = range.split(",") # split the comma separated values
+    cleaned_list = range.split(',') # split the comma separated values
 
     cleaned_list.sort.each do |entry|
-      if entry.include? "-" 
-        lowest, highest = entry.split("-")
-        if lowest.to_i >= highest.to_i then # if we have d-a then just add d
+      if entry.include? '-'
+        lowest, highest = entry.split('-')
+        if lowest.to_i >= highest.to_i # if we have d-a then just add d
           @values << entry.to_i
         else
           @ranges << Range.new(lowest.to_i, highest.to_i) # range to array
@@ -161,7 +157,7 @@ class PartialRange
   end
 
   def cleanup_values
-    @values = @values.delete_if {|value| ranges_include? value}
+    @values = @values.delete_if { |value| ranges_include? value }
   end
 
   def cleanup_ranges
@@ -201,7 +197,6 @@ class PartialRange
       end
 
       # p cleaned_ranges
-
     end
 
     @ranges = cleaned_ranges
@@ -216,7 +211,6 @@ class PartialRange
     new_values = []
 
     @values.each do |value|
-
       @ranges.each do |range|
         # p range
 
@@ -254,18 +248,18 @@ class PartialRange
       if range.last + 1 == value
         changed = true
         if @values.include? value + 1
-          @values.delete(value+1)
+          @values.delete(value + 1)
           Range.new(range.first, value + 1)
         else
           Range.new(range.first, value)
         end
       elsif range.first - 1 == value
-        if changed # there is a range with the higher bound the same
-          combinable_range_idx = @ranges.index(range)
-        end
+        # there is a range with the higher bound the same
+        combinable_range_idx = @ranges.index(range) if changed
+
         changed = true
         if @values.include? value - 1
-          @values.delete(value-1)
+          @values.delete(value - 1)
           Range.new(value - 1, range.last)
         else
           Range.new(value, range.last)
@@ -287,7 +281,7 @@ class PartialRange
     cleanup_ranges if changed
     mark_caches_dirty if changed
 
-    return changed
+    changed
   end
 
   def process_values(value)
@@ -297,17 +291,17 @@ class PartialRange
     @values.sort!
 
     pos = @values.index(value)
-    lower_value = @values[pos-1]
-    upper_value = @values[pos+1]
-    if lower_value == value - 1 or upper_value == value + 1
-      if lower_value == value - 1 and upper_value == value + 1
+    lower_value = @values[pos - 1]
+    upper_value = @values[pos + 1]
+    if lower_value == value - 1 || upper_value == value + 1
+      if lower_value == value - 1 && upper_value == value + 1
         @ranges << Range.new(lower_value, upper_value)
         @values.delete(lower_value)
         @values.delete(upper_value)
-      elsif @values[pos-1] == value - 1
+      elsif @values[pos - 1] == value - 1
         @ranges << Range.new(lower_value, value)
         @values.delete(lower_value)
-      elsif @values[pos+1] == value + 1
+      elsif @values[pos + 1] == value + 1
         @ranges << Range.new(value, upper_value)
         @values.delete(upper_value)
       end
@@ -317,7 +311,7 @@ class PartialRange
 
     mark_caches_dirty
 
-    return true
+    true
   end
 
   def ranges_include?(value)
@@ -326,20 +320,20 @@ class PartialRange
       return false if range.first > value
     end
 
-    return false
+    false
   end
 
-  #def cleanup_ranges
-  #  @ranges.sort!
-  #end
+  # def cleanup_ranges
+  #   @ranges.sort!
+  # end
 end
 
 class Range
   def <=>(other)
-    low = self.first
+    low = first
     other_low = other.is_a?(Range) ? other.first : other
-    result = low <=> other_low
-    return result
+
+    low <=> other_low
   end
 end
 
@@ -350,11 +344,9 @@ class Integer
       low = self
       other_low = other.first
 
-      result = low <=> other_low
-      return result
+      low <=> other_low
     else
-      result = old_compare(other)
-      return result
+      old_compare(other)
     end
   end
 end
